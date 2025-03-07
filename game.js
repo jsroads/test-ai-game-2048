@@ -4,6 +4,47 @@ class Game2048 {
         this.score = 0;
         this.bestScore = parseInt(localStorage.getItem('bestScore')) || 0;
         this.init();
+        this.initTouchEvents();
+    }
+
+    initTouchEvents() {
+        const container = document.querySelector('.grid-container');
+        let startX, startY;
+
+        container.addEventListener('touchstart', (e) => {
+            startX = e.touches[0].clientX;
+            startY = e.touches[0].clientY;
+        });
+
+        container.addEventListener('touchmove', (e) => {
+            e.preventDefault();
+        });
+
+        container.addEventListener('touchend', (e) => {
+            const endX = e.changedTouches[0].clientX;
+            const endY = e.changedTouches[0].clientY;
+            const deltaX = endX - startX;
+            const deltaY = endY - startY;
+            const minSwipeDistance = 30;
+
+            if (Math.abs(deltaX) > Math.abs(deltaY)) {
+                if (Math.abs(deltaX) > minSwipeDistance) {
+                    if (deltaX > 0) {
+                        this.move('right');
+                    } else {
+                        this.move('left');
+                    }
+                }
+            } else {
+                if (Math.abs(deltaY) > minSwipeDistance) {
+                    if (deltaY > 0) {
+                        this.move('down');
+                    } else {
+                        this.move('up');
+                    }
+                }
+            }
+        });
     }
 
     init() {
@@ -34,33 +75,48 @@ class Game2048 {
         const container = document.querySelector('.grid-container');
         const cells = container.getElementsByClassName('grid-cell');
         const tiles = container.getElementsByClassName('tile');
+        const oldTiles = {};
         
-        while (tiles.length > 0) {
-            tiles[0].remove();
-        }
+        // 保存旧的数字块位置
+        Array.from(tiles).forEach(tile => {
+            const value = parseInt(tile.textContent);
+            const top = tile.style.top;
+            const left = tile.style.left;
+            oldTiles[`${top},${left}`] = {
+                element: tile,
+                value: value
+            };
+        });
 
         for (let i = 0; i < 4; i++) {
             for (let j = 0; j < 4; j++) {
                 if (this.grid[i][j] !== 0) {
-                    const tile = document.createElement('div');
-                    tile.className = `tile tile-${this.grid[i][j]}`;
-                    tile.textContent = this.grid[i][j];
-                    tile.style.top = `${i * 115 + 15}px`;
-                    tile.style.left = `${j * 115 + 15}px`;
-                    container.appendChild(tile);
+                    const spacing = window.innerWidth <= 500 ? 80 : 115;
+                    const padding = window.innerWidth <= 500 ? 10 : 15;
+                    const top = `${i * spacing + padding}px`;
+                    const left = `${j * spacing + padding}px`;
+                    const key = `${top},${left}`;
+                    
+                    if (oldTiles[key] && oldTiles[key].value === this.grid[i][j]) {
+                        // 如果位置相同且数值相同，保留原有数字块
+                        delete oldTiles[key];
+                    } else {
+                        // 创建新的数字块
+                        const tile = document.createElement('div');
+                        tile.className = `tile tile-${this.grid[i][j]}`;
+                        tile.textContent = this.grid[i][j];
+                        tile.style.top = top;
+                        tile.style.left = left;
+                        container.appendChild(tile);
+                    }
                 }
             }
         }
-
-        if (window.innerWidth <= 500) {
-            const tiles = document.getElementsByClassName('tile');
-            for (let tile of tiles) {
-                const row = parseInt(tile.style.top) / 115;
-                const col = parseInt(tile.style.left) / 115;
-                tile.style.top = `${row * 80 + 10}px`;
-                tile.style.left = `${col * 80 + 10}px`;
-            }
-        }
+        
+        // 移除旧的数字块
+        Object.values(oldTiles).forEach(({element}) => {
+            element.remove();
+        });
     }
 
     move(direction) {
