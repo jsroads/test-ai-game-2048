@@ -139,8 +139,20 @@ class Game2048 {
         }
 
         if (moved) {
-            this.addNewTile();
             this.renderGrid();
+            setTimeout(() => {
+                this.addNewTile();
+                this.renderGrid();
+                const newTiles = document.querySelectorAll('.tile:not([style*="transition"])');
+                newTiles.forEach(tile => {
+                    tile.style.opacity = '0';
+                    tile.style.transition = 'opacity 0.3s ease-in';
+                    requestAnimationFrame(() => {
+                        tile.style.opacity = '1';
+                    });
+                });
+            }, 100);
+            
             if (this.isGameOver()) {
                 alert('游戏结束！');
             }
@@ -285,53 +297,27 @@ document.addEventListener('DOMContentLoaded', () => {
         game.init();
     });
 
-    document.addEventListener('keydown', (e) => {
-        switch(e.key) {
-            case 'ArrowUp':
-                e.preventDefault();
-                game.move('up');
-                break;
-            case 'ArrowDown':
-                e.preventDefault();
-                game.move('down');
-                break;
-            case 'ArrowLeft':
-                e.preventDefault();
-                game.move('left');
-                break;
-            case 'ArrowRight':
-                e.preventDefault();
-                game.move('right');
-                break;
-        }
-    });
-
-    let touchStartX = 0;
-    let touchStartY = 0;
-
-    document.addEventListener('touchstart', (e) => {
-        touchStartX = e.touches[0].clientX;
-        touchStartY = e.touches[0].clientY;
-    });
-
-    document.addEventListener('touchend', (e) => {
-        const touchEndX = e.changedTouches[0].clientX;
-        const touchEndY = e.changedTouches[0].clientY;
-        const dx = touchEndX - touchStartX;
-        const dy = touchEndY - touchStartY;
-
-        if (Math.abs(dx) > Math.abs(dy)) {
-            if (dx > 0) {
-                game.move('right');
-            } else {
-                game.move('left');
+    // 只在非触摸设备上绑定键盘事件
+    if (!('ontouchstart' in window)) {
+        document.addEventListener('keydown', (e) => {
+            switch(e.key) {
+                case 'ArrowUp':
+                    e.preventDefault();
+                    game.move('up');
+                    break;
+                case 'ArrowDown':
+                    e.preventDefault();
+                    game.move('down');
+                    break;
+                case 'ArrowLeft':
+                    e.preventDefault();
+                    game.move('left');
+                    break;
+                case 'ArrowRight':
+                    e.preventDefault();
+                    game.move('right');
+                    break;
             }
-        } else {
-            if (dy > 0) {
-                game.move('down');
-            } else {
-                game.move('up');
-            }
-        }
-    });
+        });
+    }
 });
